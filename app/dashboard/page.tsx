@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent} from '@/components/ui/card'
+import { Button, Card, CardContent, Pagination } from '@/components/ui'
 import { Plus, Edit, Trash2, Eye, BarChart3, Copy, User, Search, Filter, X } from 'lucide-react'
 
 interface Form {
@@ -26,6 +25,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [isChangingPage, setIsChangingPage] = useState(false)
 
   useEffect(() => {
     fetchForms()
@@ -64,9 +66,33 @@ export default function DashboardPage() {
     return matchesSearch && matchesStatus
   })
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredForms.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedForms = filteredForms.slice(startIndex, endIndex)
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter])
+
   const clearFilters = () => {
     setSearchTerm('')
     setStatusFilter('all')
+    setCurrentPage(1)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1)
+  }
+
+  const handlePageChange = (page: number) => {
+    setIsChangingPage(true)
+    setCurrentPage(page)
+    // Simulate a small delay for better UX
+    setTimeout(() => setIsChangingPage(false), 100)
   }
 
   const deleteForm = async (formId: string) => {
@@ -249,6 +275,22 @@ export default function DashboardPage() {
                 </select>
               </div>
 
+              {/* Page Size Selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span className="text-sm text-gray-600">per page</span>
+              </div>
+
               {/* Clear Filters */}
               {(searchTerm || statusFilter !== 'all') && (
                 <Button
@@ -263,7 +305,7 @@ export default function DashboardPage() {
 
             {/* Results Count */}
             <div className="mt-4 text-sm text-gray-600">
-              Showing {filteredForms.length} of {forms.length} forms
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredForms.length)} of {filteredForms.length} forms
             </div>
           </div>
         </div>
@@ -302,7 +344,13 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {filteredForms.map((form) => (
+              {isChangingPage ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading...</p>
+                </div>
+              ) : (
+                paginatedForms.map((form) => (
                 <div key={form.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -382,7 +430,21 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+                )}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalItems={filteredForms.length}
+                itemsPerPage={itemsPerPage}
+              />
             </div>
           )}
         </div>

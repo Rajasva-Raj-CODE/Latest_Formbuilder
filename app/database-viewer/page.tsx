@@ -1,19 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Select, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Pagination } from "@/components/ui";
 import {
   RefreshCw,
   Database,
@@ -97,6 +85,10 @@ export default function DatabaseViewerPage() {
     id: string;
     title: string;
   } | null>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchData();
@@ -236,6 +228,21 @@ export default function DatabaseViewerPage() {
     return filtered;
   }, [submissions, searchTerm, sortBy, sortOrder]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredForms.length / itemsPerPage);
+  const submissionsTotalPages = Math.ceil(filteredSubmissions.length / itemsPerPage);
+  
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  
+  const paginatedForms = filteredForms.slice(startIndex, endIndex);
+  const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, sortBy, sortOrder]);
+
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -267,6 +274,11 @@ export default function DatabaseViewerPage() {
     setSortOrder("desc");
     setExpandedRows(new Set());
     setRawDataView(new Set());
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const toggleRawDataView = (id: string) => {
@@ -757,6 +769,25 @@ export default function DatabaseViewerPage() {
               </Select>
             )}
 
+            {/* Page Size Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
+
             <Button
               variant="outline"
               onClick={clearFilters}
@@ -813,7 +844,7 @@ export default function DatabaseViewerPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredForms.map((form) => (
+                  paginatedForms.map((form) => (
                     <React.Fragment key={form.id}>
                       <TableRow
                         className="cursor-pointer hover:bg-blue-50 transition-colors"
@@ -990,6 +1021,19 @@ export default function DatabaseViewerPage() {
                 )}
               </TableBody>
             </Table>
+            
+            {/* Pagination for Forms */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={filteredForms.length}
+                  itemsPerPage={itemsPerPage}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -1029,7 +1073,7 @@ export default function DatabaseViewerPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSubmissions.map((submission) => (
+                  paginatedSubmissions.map((submission) => (
                     <React.Fragment key={submission.id}>
                       <TableRow
                         className="cursor-pointer hover:bg-blue-50 transition-colors"
@@ -1140,6 +1184,19 @@ export default function DatabaseViewerPage() {
                 )}
               </TableBody>
             </Table>
+            
+            {/* Pagination for Submissions */}
+            {submissionsTotalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={submissionsTotalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={filteredSubmissions.length}
+                  itemsPerPage={itemsPerPage}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -1147,9 +1204,9 @@ export default function DatabaseViewerPage() {
         <div className="mt-6 text-sm text-gray-600 text-center">
           Showing{" "}
           {activeTab === "forms"
-            ? filteredForms.length
-            : filteredSubmissions.length}{" "}
-          of {activeTab === "forms" ? forms.length : submissions.length}{" "}
+            ? `${startIndex + 1} to ${Math.min(endIndex, filteredForms.length)}`
+            : `${startIndex + 1} to ${Math.min(endIndex, filteredSubmissions.length)}`}{" "}
+          of {activeTab === "forms" ? filteredForms.length : filteredSubmissions.length}{" "}
           {activeTab}
         </div>
 
