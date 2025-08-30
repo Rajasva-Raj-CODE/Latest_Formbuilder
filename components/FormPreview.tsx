@@ -77,6 +77,14 @@ export function FormPreview() {
       setIsSubmitting(true)
       setSubmitError(null)
 
+      // Debug logging
+      console.log('Submitting form with data:', {
+        formId: params.id,
+        formValues,
+        metadata,
+        fields
+      })
+
       const response = await fetch(`/api/forms/${params.id}/submissions`, {
         method: 'POST',
         headers: {
@@ -84,15 +92,21 @@ export function FormPreview() {
         },
         body: JSON.stringify({
           data: formValues,
-          userName: formValues.userName || 'Anonymous'
+          userName: metadata.userName || 'Anonymous'
         }),
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
       if (response.ok) {
+        const result = await response.json()
+        console.log('Submission successful:', result)
         setIsSubmitted(true)
         resetFormValues()
       } else {
         const errorData = await response.json()
+        console.error('Submission failed:', errorData)
         setSubmitError(errorData.error || 'Failed to submit form. Please try again.')
       }
     } catch (error) {

@@ -42,7 +42,10 @@ export default function FormPage() {
 
   const fetchForm = async (formId: string) => {
     try {
+      console.log('Fetching form with ID:', formId)
       const response = await fetch(`/api/forms/${formId}`)
+      
+      console.log('Form response status:', response.status)
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -54,6 +57,7 @@ export default function FormPage() {
       }
 
       const data = await response.json()
+      console.log('Form data received:', data)
       
       if (!data.isPublished) {
         setError('This form is not published yet')
@@ -84,6 +88,7 @@ export default function FormPage() {
         options: field.options ? JSON.parse(field.options) : undefined
       }))
       
+      console.log('Transformed fields:', transformedFields)
       reorderFields(transformedFields)
     } catch (error) {
       console.error('Error fetching form:', error)
