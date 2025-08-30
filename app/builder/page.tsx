@@ -8,36 +8,11 @@ import { FormBuilder } from '@/components/FormBuilder'
 import { FormPreview } from '@/components/FormPreview'
 import { FieldPanel } from '@/components/FieldPanel'
 import { Button } from '@/components/ui/button'
-import { Save, Eye, Settings, Plus, User, CheckCircle } from 'lucide-react'
-
-interface FormField {
-  id: string
-  type: string
-  label: string
-  required: boolean
-  placeholder: string
-  options?: string[]
-}
-
-interface FormData {
-  id?: string
-  title: string
-  description: string
-  userName: string
-  fields: FormField[]
-  isPublished?: boolean
-  publishedAt?: string
-}
+import { Save, Eye, Settings, Plus, CheckCircle } from 'lucide-react'
+import { useFormStore } from '@/lib/store'
 
 export default function BuilderPage() {
   const [activeTab, setActiveTab] = useState<'builder' | 'preview'>('builder')
-  const [formData, setFormData] = useState<FormData>({
-    id: '',
-    title: 'Untitled Form',
-    description: '',
-    userName: '',
-    fields: []
-  })
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
@@ -48,11 +23,22 @@ export default function BuilderPage() {
   const router = useRouter()
   const editFormId = searchParams.get('edit')
 
+  const {
+    metadata,
+    fields,
+    reorderFields,
+    resetForm,
+    resetFormValues
+  } = useFormStore()
+
   useEffect(() => {
     if (editFormId) {
       loadForm(editFormId)
+    } else {
+      // Reset form when creating new
+      resetForm()
     }
-  }, [editFormId])
+  }, [editFormId, resetForm])
 
   const loadForm = async (formId: string) => {
     try {
@@ -60,14 +46,13 @@ export default function BuilderPage() {
       const response = await fetch(`/api/forms/${formId}`)
       if (response.ok) {
         const form = await response.json()
-        // Transform the form data to match our local structure
-        const transformedForm: FormData = {
-          id: form.id,
-          title: form.title,
-          description: form.description || '',
-          userName: form.userName,
-          isPublished: form.isPublished,
-          publishedAt: form.publishedAt,
+        // Transform the form data and update store
+        const transformedForm = {
+          metadata: {
+            title: form.title,
+            description: form.description || '',
+            userName: form.userName
+          },
           fields: form.fields.map((field: any) => ({
             id: field.id,
             type: field.type,
@@ -77,7 +62,12 @@ export default function BuilderPage() {
             options: field.options ? JSON.parse(field.options) : undefined
           }))
         }
-        setFormData(transformedForm)
+        
+        // Update store with loaded data
+        useFormStore.setState({
+          metadata: transformedForm.metadata,
+          fields: transformedForm.fields
+        })
       } else {
         console.error('Failed to load form')
         alert('Failed to load form')
@@ -94,57 +84,15 @@ export default function BuilderPage() {
     const { active, over } = event
     
     if (over && active.id !== over.id) {
-      const oldIndex = formData.fields.findIndex(field => field.id === active.id)
-      const newIndex = formData.fields.findIndex(field => field.id === over.id)
+      const oldIndex = fields.findIndex(field => field.id === active.id)
+      const newIndex = fields.findIndex(field => field.id === over.id)
       
-      const newFields = [...formData.fields]
+      const newFields = [...fields]
       const [movedField] = newFields.splice(oldIndex, 1)
       newFields.splice(newIndex, 0, movedField)
       
-      setFormData(prev => ({
-        ...prev,
-        fields: newFields
-      }))
+      reorderFields(newFields)
     }
-  }
-
-  const addField = (fieldType: string) => {
-    const newField: FormField = {
-      id: `field-${Date.now()}`,
-      type: fieldType,
-      label: `New ${fieldType}`,
-      required: false,
-      placeholder: '',
-      options: fieldType === 'select' || fieldType === 'radio' || fieldType === 'checkbox' ? ['Option 1'] : undefined
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      fields: [...prev.fields, newField]
-    }))
-  }
-
-  const updateField = (fieldId: string, updates: Partial<FormField>) => {
-    setFormData(prev => ({
-      ...prev,
-      fields: prev.fields.map(field => 
-        field.id === fieldId ? { ...field, ...updates } : field
-      )
-    }))
-  }
-
-  const updateFormMetadata = (updates: Partial<Pick<FormData, 'title' | 'description' | 'userName'>>) => {
-    setFormData(prev => ({
-      ...prev,
-      ...updates
-    }))
-  }
-
-  const deleteField = (fieldId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      fields: prev.fields.filter(field => field.id !== fieldId)
-    }))
   }
 
   const saveForm = async () => {
@@ -152,46 +100,41 @@ export default function BuilderPage() {
       setSaving(true)
       setSaveMessage(null)
       
-      console.log('Saving form with data:', formData)
-      console.log('Fields array:', formData.fields)
-      console.log('Fields length:', formData.fields.length)
-      console.log('First field example:', formData.fields[0])
-      
       // Validate form data before saving
-      if (!formData.title.trim()) {
+      if (!metadata.title.trim()) {
         setSaveMessage('Form title is required')
         setSaveMessageType('error')
         return
       }
       
-      if (!formData.userName.trim()) {
+      if (!metadata.userName.trim()) {
         setSaveMessage('Your name is required')
         setSaveMessageType('error')
         return
       }
       
-      if (formData.fields.length === 0) {
+      if (fields.length === 0) {
         setSaveMessage('Please add at least one field to your form')
         setSaveMessageType('error')
         return
       }
       
-      const url = formData.id ? `/api/forms/${formData.id}` : '/api/forms'
-      const method = formData.id ? 'PUT' : 'POST'
+      const url = editFormId ? `/api/forms/${editFormId}` : '/api/forms'
+      const method = editFormId ? 'PUT' : 'POST'
       
-      // Prepare data for API (remove id if it's empty for new forms)
-      const dataToSend = formData.id ? formData : {
-        title: formData.title,
-        description: formData.description,
-        userName: formData.userName,
-        fields: formData.fields
+      // Prepare data for API
+      const dataToSend = editFormId ? {
+        id: editFormId,
+        title: metadata.title,
+        description: metadata.description,
+        userName: metadata.userName,
+        fields: fields
+      } : {
+        title: metadata.title,
+        description: metadata.description,
+        userName: metadata.userName,
+        fields: fields
       }
-      
-      console.log('Sending data to:', url, 'with method:', method)
-      console.log('Data being sent:', dataToSend)
-      console.log('Fields being sent:', dataToSend.fields)
-      console.log('Fields type:', typeof dataToSend.fields)
-      console.log('Fields is array:', Array.isArray(dataToSend.fields))
       
       const response = await fetch(url, {
         method,
@@ -201,28 +144,12 @@ export default function BuilderPage() {
         body: JSON.stringify(dataToSend),
       })
 
-      console.log('Response status:', response.status)
-      console.log('Response ok:', response.ok)
-
       if (response.ok) {
         const savedForm = await response.json()
-        console.log('Form saved successfully:', savedForm)
         
-        if (!formData.id) {
-          // If this was a new form, update the form data with the real ID
-          setFormData(prev => ({ ...prev, id: savedForm.id }))
-          // Update URL without redirecting
+        if (!editFormId) {
+          // If this was a new form, update the URL
           router.replace(`/builder?edit=${savedForm.id}`, { scroll: false })
-        } else {
-          // Update the form data with the latest from server
-          setFormData(prev => ({ 
-            ...prev, 
-            title: savedForm.title,
-            description: savedForm.description,
-            userName: savedForm.userName,
-            isPublished: savedForm.isPublished,
-            publishedAt: savedForm.publishedAt
-          }))
         }
         
         setSaveMessage('Form saved successfully!')
@@ -232,7 +159,6 @@ export default function BuilderPage() {
         setTimeout(() => setSaveMessage(null), 3000)
       } else {
         const errorData = await response.json()
-        console.error('Save failed:', errorData)
         setSaveMessage(errorData.error || 'Failed to save form')
         setSaveMessageType('error')
       }
@@ -250,36 +176,26 @@ export default function BuilderPage() {
       setPublishing(true)
       setSaveMessage(null)
       
-      console.log('Publishing form. Current formData:', formData)
-      
       // First save the form if it hasn't been saved
-      if (!formData.id) {
+      if (!editFormId) {
         setSaveMessage('Saving form first...')
         setSaveMessageType('success')
         
-        console.log('Form has no ID, saving first...')
-        
-        // Save the form and wait for it to complete
         await saveForm()
         
         // Check if save was successful
-        if (!formData.id) {
-          console.log('Save failed, cannot publish')
+        if (!editFormId) {
           setSaveMessage('Failed to save form. Cannot publish.')
           setSaveMessageType('error')
           return
         }
         
-        console.log('Form saved with ID:', formData.id)
-        
         // Wait a bit for the state to update
         await new Promise(resolve => setTimeout(resolve, 1000))
       }
 
-      console.log('Publishing form with ID:', formData.id)
-
       // Now publish the form
-      const response = await fetch(`/api/forms/${formData.id}/publish`, {
+      const response = await fetch(`/api/forms/${editFormId}/publish`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -287,15 +203,7 @@ export default function BuilderPage() {
         body: JSON.stringify({ isPublished: true }),
       })
 
-      console.log('Publish response status:', response.status)
-      console.log('Publish response ok:', response.ok)
-
       if (response.ok) {
-        const publishedForm = await response.json()
-        console.log('Form published successfully:', publishedForm)
-        
-        setFormData(prev => ({ ...prev, isPublished: true, publishedAt: publishedForm.publishedAt }))
-        
         setSaveMessage('Form published successfully! Redirecting to dashboard...')
         setSaveMessageType('success')
         
@@ -305,7 +213,6 @@ export default function BuilderPage() {
         }, 2000)
       } else {
         const errorData = await response.json()
-        console.error('Publish failed:', errorData)
         setSaveMessage(errorData.error || 'Failed to publish form')
         setSaveMessageType('error')
       }
@@ -369,53 +276,25 @@ export default function BuilderPage() {
               </div>
             )}
             
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                // Test: Add a test field
-                addField('text')
-                setFormData(prev => ({
-                  ...prev,
-                  title: 'Test Form ' + Date.now(),
-                  userName: 'Test User',
-                  description: 'Test description'
-                }))
-              }}
-              className="text-blue-600"
-            >
-              Test: Add Sample Data
-            </Button>
-            
             <Button variant="outline" onClick={saveForm} disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Saving...' : 'Save'}
             </Button>
             <Button 
               onClick={publishForm} 
-              disabled={publishing || !formData.id}
-              className={formData.isPublished ? 'bg-green-600 hover:bg-green-700' : ''}
+              disabled={publishing || !editFormId}
             >
-              {formData.isPublished ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Published
-                </>
-              ) : (
-                <>
-                  <Settings className="w-4 h-4 mr-2" />
-                  {publishing ? 'Publishing...' : 'Publish'}
-                </>
-              )}
+              <Settings className="w-4 h-4 mr-2" />
+              {publishing ? 'Publishing...' : 'Publish'}
             </Button>
           </div>
-          
         </div>
       </div>
 
       <div className="flex h-[calc(100vh-80px)]">
         {/* Left Sidebar - Field Panel */}
         <div className="w-80 bg-white border-r border-gray-200 p-4">
-          <FieldPanel onAddField={addField} />
+          <FieldPanel />
         </div>
 
         {/* Main Content */}
@@ -427,21 +306,16 @@ export default function BuilderPage() {
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext
-                  items={formData.fields.map(field => field.id)}
+                  items={fields.map(field => field.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <FormBuilder
-                    formData={formData}
-                    onUpdateField={updateField}
-                    onUpdateFormMetadata={updateFormMetadata}
-                    onDeleteField={deleteField}
-                  />
+                  <FormBuilder />
                 </SortableContext>
               </DndContext>
             </div>
           ) : (
             <div className="flex-1 p-6">
-              <FormPreview formData={formData} />
+              <FormPreview />
             </div>
           )}
         </div>

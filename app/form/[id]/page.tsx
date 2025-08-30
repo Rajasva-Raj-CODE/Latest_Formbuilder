@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import { Card, CardContent } from '@/components/ui'
+import { AlertCircle } from 'lucide-react'
 import { FormPreview } from '@/components/FormPreview'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, CheckCircle } from 'lucide-react'
+import { useFormStore } from '@/lib/store'
 
 interface FormField {
   id: string
@@ -12,12 +13,13 @@ interface FormField {
   label: string
   required: boolean
   placeholder: string
-  options?: string | string[]
+  options?: string
 }
 
 interface Form {
   id: string
   title: string
+  userName: string
   description: string
   isPublished: boolean
   isActive: boolean
@@ -29,6 +31,8 @@ export default function FormPage() {
   const [form, setForm] = useState<Form | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  const { updateMetadata, reorderFields } = useFormStore()
 
   useEffect(() => {
     if (params.id) {
@@ -62,6 +66,25 @@ export default function FormPage() {
       }
 
       setForm(data)
+      
+      // Update the Zustand store with the form data
+      updateMetadata({
+        title: data.title,
+        description: data.description,
+        userName: data.userName
+      })
+      
+      // Transform and update fields
+      const transformedFields = data.fields.map((field: any) => ({
+        id: field.id,
+        type: field.type,
+        label: field.label,
+        required: field.required,
+        placeholder: field.placeholder || '',
+        options: field.options ? JSON.parse(field.options) : undefined
+      }))
+      
+      reorderFields(transformedFields)
     } catch (error) {
       console.error('Error fetching form:', error)
       setError('Failed to load form')
@@ -112,7 +135,7 @@ export default function FormPage() {
           </div>
 
           {/* Form Content */}
-          <FormPreview formData={form} />
+          <FormPreview />
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui'
+import { FieldTypeCard } from './fields'
+import { useFormStore } from '@/lib/store'
 import { 
   Type, 
   Mail, 
@@ -15,10 +16,6 @@ import {
   Image,
   Link
 } from 'lucide-react'
-
-interface FieldPanelProps {
-  onAddField: (fieldType: string) => void
-}
 
 const fieldTypes = [
   { type: 'text', label: 'Text Input', icon: Type, description: 'Single line text input' },
@@ -33,12 +30,17 @@ const fieldTypes = [
   { type: 'url', label: 'URL', icon: Link, description: 'URL input' }
 ]
 
-export function FieldPanel({ onAddField }: FieldPanelProps) {
+export function FieldPanel() {
   const [searchTerm, setSearchTerm] = useState('')
+  const { addField } = useFormStore()
 
   const filteredFields = fieldTypes.filter(field =>
     field.label.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const handleAddField = (fieldType: string) => {
+    addField(fieldType)
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -49,39 +51,26 @@ export function FieldPanel({ onAddField }: FieldPanelProps) {
 
       {/* Search */}
       <div className="mb-4">
-        <input
+        <Input
           type="text"
           placeholder="Search fields..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
       {/* Field Types */}
       <div className="flex-1 overflow-y-auto space-y-2">
-        {filteredFields.map((field) => {
-          const Icon = field.icon
-          return (
-            <Card
-              key={field.type}
-              className="cursor-pointer hover:shadow-md transition-shadow border-gray-200 hover:border-blue-300"
-              onClick={() => onAddField(field.type)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{field.label}</h3>
-                    <p className="text-sm text-gray-600">{field.description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {filteredFields.map((field) => (
+          <FieldTypeCard
+            key={field.type}
+            type={field.type}
+            label={field.label}
+            icon={field.icon}
+            description={field.description}
+            onClick={() => handleAddField(field.type)}
+          />
+        ))}
       </div>
 
       {/* Quick Add Buttons */}
@@ -91,7 +80,7 @@ export function FieldPanel({ onAddField }: FieldPanelProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onAddField('text')}
+            onClick={() => handleAddField('text')}
             className="text-xs"
           >
             Text
@@ -99,7 +88,7 @@ export function FieldPanel({ onAddField }: FieldPanelProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onAddField('email')}
+            onClick={() => handleAddField('email')}
             className="text-xs"
           >
             Email
