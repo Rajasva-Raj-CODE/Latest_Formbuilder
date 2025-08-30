@@ -1,0 +1,120 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { FormPreview } from '@/components/FormPreview'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertCircle, CheckCircle } from 'lucide-react'
+
+interface FormField {
+  id: string
+  type: string
+  label: string
+  required: boolean
+  placeholder: string
+  options?: string | string[]
+}
+
+interface Form {
+  id: string
+  title: string
+  description: string
+  isPublished: boolean
+  isActive: boolean
+  fields: FormField[]
+}
+
+export default function FormPage() {
+  const params = useParams()
+  const [form, setForm] = useState<Form | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (params.id) {
+      fetchForm(params.id as string)
+    }
+  }, [params.id])
+
+  const fetchForm = async (formId: string) => {
+    try {
+      const response = await fetch(`/api/forms/${formId}`)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Form not found')
+        } else {
+          setError('Failed to load form')
+        }
+        return
+      }
+
+      const data = await response.json()
+      
+      if (!data.isPublished) {
+        setError('This form is not published yet')
+        return
+      }
+
+      if (!data.isActive) {
+        setError('This form is no longer active')
+        return
+      }
+
+      setForm(data)
+    } catch (error) {
+      console.error('Error fetching form:', error)
+      setError('Failed to load form')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading form...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Form Unavailable</h2>
+            <p className="text-gray-600">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!form) {
+    return null
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Form Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{form.title}</h1>
+            {form.description && (
+              <p className="text-lg text-gray-600">{form.description}</p>
+            )}
+          </div>
+
+          {/* Form Content */}
+          <FormPreview formData={form} />
+        </div>
+      </div>
+    </div>
+  )
+} 
