@@ -177,6 +177,54 @@ Use the `/test` page to test form submission functionality:
 - Make sure PostgreSQL is running
 - Check if the database exists and is accessible
 
+## Deployment
+
+### Vercel Deployment
+
+This application is configured for Vercel deployment with Prisma. The build process automatically generates the Prisma Client during deployment.
+
+#### Environment Variables
+
+Make sure to set these environment variables in your Vercel project:
+
+- `DATABASE_URL` - Your PostgreSQL connection string
+- `PRISMA_DATABASE_URL` - Your Prisma Accelerate URL (if using Prisma Accelerate)
+- `JWT_SECRET` - A secure JWT secret key
+- `NEXTAUTH_SECRET` - A secure NextAuth secret key
+
+#### Build Configuration
+
+The build process includes:
+1. `prisma generate` - Generates Prisma Client
+2. `next build` - Builds the Next.js application
+
+#### Common Deployment Issues
+
+**Prisma Client Not Generated**
+- The build script now automatically runs `prisma generate`
+- A `postinstall` script ensures Prisma Client is generated after dependencies are installed
+- Check that your `DATABASE_URL` is correctly set in Vercel
+
+**Build Failures**
+- Ensure all environment variables are set in Vercel
+- Check that your database is accessible from Vercel's servers
+- Verify your Prisma schema is valid
+
+**Database Connection Issues**
+- Use Prisma Accelerate for better performance and reliability
+- Ensure your database allows connections from Vercel's IP ranges
+- Check SSL requirements for your database
+
+### Local Development
+
+For local development, use the provided build script:
+
+```bash
+./scripts/build.sh
+```
+
+This script ensures proper setup for local development.
+
 ## Development
 
 ### Project Structure

@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 // GET /api/test-db - Test database connection
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('Testing database connection...')
     
