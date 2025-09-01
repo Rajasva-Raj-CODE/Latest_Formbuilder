@@ -1,28 +1,27 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Select, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Pagination } from "@/components/ui";
+import { Card, CardContent, Button, Badge, AdvancedTable, type Column, SubmissionDetailsModal, FormDetailsModal, ExportMenu } from "@/components/ui";
 import {
   RefreshCw,
   Database,
   FileText,
   Users,
-  Search,
-  Filter,
   Eye,
   Trash2,
   ChevronDown,
   ChevronRight,
-  Type,
-  Hash,
-  CheckSquare,
-  Square,
-  Calendar,
+  User,
   Mail,
   Phone,
   MapPin,
-  User,
+  Calendar,
+  Hash,
+  CheckSquare,
+  Square,
+  Type,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface Form {
   id: string;
@@ -70,6 +69,7 @@ export default function DatabaseViewerPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"forms" | "submissions">("forms");
 
+
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -85,6 +85,10 @@ export default function DatabaseViewerPage() {
     id: string;
     title: string;
   } | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  const [selectedForm, setSelectedForm] = useState<Form | null>(null);
+  const [showFormModal, setShowFormModal] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,6 +107,8 @@ export default function DatabaseViewerPage() {
       if (formsResponse.ok) {
         const formsData = await formsResponse.json();
         setForms(formsData);
+      } else {
+        toast.error("Failed to fetch forms", "Please refresh the page to try again.");
       }
 
       // Fetch submissions
@@ -111,12 +117,16 @@ export default function DatabaseViewerPage() {
         if (submissionsResponse.ok) {
           const submissionsData = await submissionsResponse.json();
           setSubmissions(submissionsData);
+        } else {
+          toast.warning("Failed to fetch submissions", "Submissions data may not be up to date.");
         }
-      } catch (error) {
+      } catch (err) {
         console.log("Submissions API not implemented yet");
+        toast.info("Submissions API", "Submissions API is not yet implemented.");
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      toast.error("Network error", "Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -322,13 +332,14 @@ export default function DatabaseViewerPage() {
         newExpandedRows.delete(deleteConfirm.id);
         setExpandedRows(newExpandedRows);
         setDeleteConfirm(null);
+        toast.success("Form deleted successfully!", "The form and all its data have been permanently removed.");
       } else {
-        const error = await response.json();
-        alert(`Failed to delete form: ${error.error || 'Unknown error'}`);
+        const errorData = await response.json();
+        toast.error("Failed to delete form", errorData.error || 'Please try again.');
       }
-    } catch (error) {
-      console.error('Error deleting form:', error);
-      alert('Failed to delete form. Please try again.');
+    } catch (err) {
+      console.error('Error deleting form:', err);
+      toast.error("Network error", "Please check your connection and try again.");
     } finally {
       setDeletingItem(null);
     }
@@ -365,13 +376,14 @@ export default function DatabaseViewerPage() {
         newExpandedRows.delete(deleteConfirm.id);
         setExpandedRows(newExpandedRows);
         setDeleteConfirm(null);
+        toast.success("Submission deleted successfully!", "The submission has been permanently removed.");
       } else {
-        const error = await response.json();
-        alert(`Failed to delete submission: ${error.error || 'Unknown error'}`);
+        const errorData = await response.json();
+        toast.error("Failed to delete submission", errorData.error || 'Please try again.');
       }
-    } catch (error) {
-      console.error('Error deleting submission:', error);
-      alert('Failed to delete submission. Please try again.');
+    } catch (err) {
+      console.error('Error deleting submission:', err);
+      toast.error("Network error", "Please check your connection and try again.");
     } finally {
       setDeletingItem(null);
     }
@@ -632,10 +644,13 @@ export default function DatabaseViewerPage() {
               View all data stored in your database
             </p>
           </div>
-          <Button onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh Data
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Button onClick={fetchData}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh Data
+            </Button>
+            <ExportMenu />
+          </div>
         </div>
 
         {/* Statistics */}
@@ -720,484 +735,340 @@ export default function DatabaseViewerPage() {
           </div>
         </div>
 
-        {/* Search and Filter Controls */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder={`Search ${
-                  activeTab === "forms" ? "forms" : "submissions"
-                }...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
 
-            {activeTab === "forms" && (
-              <div className="flex gap-2">
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">All Status</option>
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
-                </Select>
 
-                <Select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <option value="createdAt">Sort by Date</option>
-                  <option value="title">Sort by Title</option>
-                  <option value="userName">Sort by User</option>
-                  <option value="submissions">Sort by Submissions</option>
-                </Select>
-              </div>
-            )}
-
-            {activeTab === "submissions" && (
-              <Select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="createdAt">Sort by Date</option>
-                <option value="formTitle">Sort by Form</option>
-                <option value="userName">Sort by User</option>
-              </Select>
-            )}
-
-            {/* Page Size Selector */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Show:</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-              <span className="text-sm text-gray-600">per page</span>
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={clearFilters}
-              className="whitespace-nowrap"
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </div>
-
-        {/* Content */}
+                {/* Content */}
         {activeTab === "forms" ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("title")}
-                  >
-                    Title <SortIcon field="title" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("userName")}
-                  >
-                    Created By <SortIcon field="userName" />
-                  </TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("submissions")}
-                  >
-                    Submissions <SortIcon field="submissions" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("createdAt")}
-                  >
-                    Created <SortIcon field="createdAt" />
-                  </TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredForms.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-gray-500"
+          <AdvancedTable
+            data={paginatedForms}
+            columns={[
+              {
+                key: 'title',
+                header: 'Title',
+                accessor: (form) => form.title,
+                sortable: true,
+                filterable: true,
+                sticky: true,
+                width: '250px',
+                render: (value, form) => (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => toggleRowExpansion(form.id)}
+                      className="hover:text-blue-600 transition-colors"
                     >
-                      No forms found matching your criteria
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedForms.map((form) => (
-                    <React.Fragment key={form.id}>
-                      <TableRow
-                        className="cursor-pointer hover:bg-blue-50 transition-colors"
-                        onClick={() => toggleRowExpansion(form.id)}
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center space-x-2">
-                            {expandedRows.has(form.id) ? (
-                              <ChevronDown className="w-4 h-4 text-gray-500" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-500" />
-                            )}
-                            <span>{form.title}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{form.userName}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {form.description || "No description"}
-                        </TableCell>
-                        <TableCell>
-                          {form.isPublished ? (
-                            <Badge variant="success">Published</Badge>
-                          ) : (
-                            <Badge variant="warning">Draft</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {form._count.submissions}
-                        </TableCell>
-                        <TableCell>{formatDate(form.createdAt)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={(e) => handleDeleteForm(form.id, e)}
-                              disabled={deletingItem === form.id}
-                            >
-                              {deletingItem === form.id ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-
-                      {/* Expanded row with form details */}
-                      {expandedRows.has(form.id) && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="bg-gray-50 p-4">
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium">Form ID:</span>{" "}
-                                  {form.id}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Updated:</span>{" "}
-                                  {formatDate(form.updatedAt)}
-                                </div>
-                                {form.publishedAt && (
-                                  <div>
-                                    <span className="font-medium">
-                                      Published:
-                                    </span>{" "}
-                                    {formatDate(form.publishedAt)}
-                                  </div>
-                                )}
-                                <div>
-                                  <span className="font-medium">Active:</span>{" "}
-                                  {form.isActive ? "Yes" : "No"}
-                                </div>
-                              </div>
-
-                              <div>
-                                <h4 className="font-medium mb-3">
-                                  Form Fields ({form.fields.length})
-                                </h4>
-                                <div className="space-y-3">
-                                  {form.fields
-                                    .sort((a, b) => a.order - b.order)
-                                    .map((field) => (
-                                      <div
-                                        key={field.id}
-                                        className="bg-white p-4 rounded-md border border-gray-200 hover:border-gray-300 transition-colors"
-                                      >
-                                        <div className="flex items-start justify-between mb-2">
-                                          <div className="flex items-center space-x-2">
-                                            <span className="font-medium text-gray-900">
-                                              {field.label}
-                                            </span>
-                                            {field.required && (
-                                              <Badge
-                                                variant="destructive"
-                                                className="text-xs"
-                                              >
-                                                Required
-                                              </Badge>
-                                            )}
-                                          </div>
-                                          <Badge
-                                            variant="outline"
-                                            className="text-xs font-mono"
-                                          >
-                                            {field.type}
-                                          </Badge>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                          <div>
-                                            <span className="text-gray-500">
-                                              Order:
-                                            </span>
-                                            <span className="ml-2 font-medium">
-                                              {field.order}
-                                            </span>
-                                          </div>
-
-                                          {field.placeholder && (
-                                            <div>
-                                              <span className="text-gray-500">
-                                                Placeholder:
-                                              </span>
-                                              <span className="ml-2 font-medium">
-                                                {field.placeholder}
-                                              </span>
-                                            </div>
-                                          )}
-
-                                          {field.options &&
-                                            parseOptions(field.options).length >
-                                              0 && (
-                                              <div className="md:col-span-2">
-                                                <span className="text-gray-500">
-                                                  Options:
-                                                </span>
-                                                <div className="mt-1 flex flex-wrap gap-1">
-                                                  {parseOptions(
-                                                    field.options
-                                                  ).map(
-                                                    (
-                                                      option: string,
-                                                      index: number
-                                                    ) => (
-                                                      <Badge
-                                                        key={index}
-                                                        variant="secondary"
-                                                        className="text-xs"
-                                                      >
-                                                        {option}
-                                                      </Badge>
-                                                    )
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                      {expandedRows.has(form.id) ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
                       )}
-                    </React.Fragment>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            
-            {/* Pagination for Forms */}
-            {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  totalItems={filteredForms.length}
-                  itemsPerPage={itemsPerPage}
-                />
-              </div>
-            )}
-          </div>
+                    </button>
+                    <span className="font-medium">{value}</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'userName',
+                header: 'Created By',
+                accessor: (form) => form.userName,
+                sortable: true,
+                filterable: true,
+                width: '150px',
+                render: (value) => (
+                  <div className="flex items-center space-x-1">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span>{value}</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'description',
+                header: 'Description',
+                accessor: (form) => form.description,
+                filterable: true,
+                width: '300px',
+                render: (value) => value || <span className="text-gray-400 italic">No description</span>,
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                accessor: (form) => form.isPublished,
+                sortable: true,
+                width: '120px',
+                render: (value, form) => (
+                  <div className="flex items-center space-x-1">
+                    {form.isPublished ? (
+                      <Badge variant="success">Published</Badge>
+                    ) : (
+                      <Badge variant="warning">Draft</Badge>
+                    )}
+                    {!form.isActive && (
+                      <Badge variant="destructive" className="ml-1">Inactive</Badge>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: 'submissions',
+                header: 'Submissions',
+                accessor: (form) => form._count.submissions,
+                sortable: true,
+                align: 'center',
+                width: '120px',
+                render: (value) => (
+                  <span className="font-mono font-medium text-blue-600">{value}</span>
+                ),
+              },
+              {
+                key: 'createdAt',
+                header: 'Created',
+                accessor: (form) => new Date(form.createdAt),
+                sortable: true,
+                width: '120px',
+                render: (value) => formatDate(value.toISOString()),
+              },
+              {
+                key: 'updatedAt',
+                header: 'Updated',
+                accessor: (form) => new Date(form.updatedAt),
+                sortable: true,
+                width: '120px',
+                render: (value) => formatDate(value.toISOString()),
+              },
+              {
+                key: 'publishedAt',
+                header: 'Published',
+                accessor: (form) => form.publishedAt ? new Date(form.publishedAt) : null,
+                sortable: true,
+                width: '120px',
+                render: (value) => value ? formatDate(value.toISOString()) : <span className="text-gray-400">-</span>,
+              },
+              {
+                key: 'fields',
+                header: 'Fields',
+                accessor: (form) => form.fields.length,
+                sortable: true,
+                align: 'center',
+                width: '100px',
+                render: (value) => (
+                  <span className="font-mono font-medium text-purple-600">{value}</span>
+                ),
+              },
+              {
+                key: 'actions',
+                header: 'Actions',
+                accessor: () => null,
+                width: '150px',
+                align: 'center',
+                render: (_, form) => (
+                  <div className="flex items-center justify-center space-x-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedForm(form);
+                        setShowFormModal(true);
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={(e) => handleDeleteForm(form.id, e)}
+                      disabled={deletingItem === form.id}
+                    >
+                      {deletingItem === form.id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
+            loading={loading}
+            pagination={{
+              currentPage,
+              totalPages,
+              totalItems: filteredForms.length,
+              itemsPerPage,
+              onPageChange: handlePageChange,
+              onItemsPerPageChange: (newItemsPerPage) => {
+                setItemsPerPage(newItemsPerPage);
+                setCurrentPage(1);
+              },
+            }}
+            search={{
+              value: searchTerm,
+              onChange: setSearchTerm,
+              placeholder: "Search forms...",
+            }}
+            sorting={{
+              sortBy,
+              sortOrder,
+              onSort: handleSort,
+            }}
+
+            actions={{
+              onRefresh: fetchData,
+              customActions: (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Status:</span>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All</option>
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                  </select>
+                </div>
+              ),
+            }}
+            emptyMessage="No forms found matching your criteria"
+            showColumnVisibility={true}
+            showFilters={false}
+            virtualScroll={true}
+            maxHeight="600px"
+          />
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("formTitle")}
-                  >
-                    Form Title <SortIcon field="formTitle" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("userName")}
-                  >
-                    User <SortIcon field="userName" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("createdAt")}
-                  >
-                    Submitted <SortIcon field="createdAt" />
-                  </TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSubmissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center py-8 text-gray-500"
+          <AdvancedTable
+            data={paginatedSubmissions}
+            columns={[
+              {
+                key: 'id',
+                header: 'ID',
+                accessor: (submission) => submission.id,
+                sortable: true,
+                filterable: true,
+                sticky: true,
+                width: '150px',
+                render: (value, submission) => (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => toggleRowExpansion(submission.id)}
+                      className="hover:text-blue-600 transition-colors"
                     >
-                      No submissions found matching your criteria
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedSubmissions.map((submission) => (
-                    <React.Fragment key={submission.id}>
-                      <TableRow
-                        className="cursor-pointer hover:bg-blue-50 transition-colors"
-                        onClick={() => toggleRowExpansion(submission.id)}
-                      >
-                        <TableCell className="font-mono text-sm">
-                          <div className="flex items-center space-x-2">
-                            {expandedRows.has(submission.id) ? (
-                              <ChevronDown className="w-4 h-4 text-gray-500" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-500" />
-                            )}
-                            <span>{submission.id.slice(0, 8)}...</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {submission.form.title}
-                        </TableCell>
-                        <TableCell>
-                          {submission.userName || "Anonymous"}
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(submission.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={(e) => handleDeleteSubmission(submission.id, e)}
-                              disabled={deletingItem === submission.id}
-                            >
-                              {deletingItem === submission.id ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-
-                      {/* Expanded row with submission details */}
-                      {expandedRows.has(submission.id) && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="bg-gray-50 p-4">
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium">
-                                    Submission ID:
-                                  </span>{" "}
-                                  {submission.id}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Form ID:</span>{" "}
-                                  {submission.formId}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="flex items-center justify-between mb-3">
-                                  <h4 className="font-medium">
-                                    Submission Data
-                                  </h4>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleRawDataView(submission.id);
-                                    }}
-                                    className="text-xs"
-                                  >
-                                    {rawDataView.has(submission.id)
-                                      ? "Show Formatted"
-                                      : "Show Raw JSON"}
-                                  </Button>
-                                </div>
-                                <div className="bg-white p-4 rounded-md border">
-                                  {rawDataView.has(submission.id) ? (
-                                    <div className="overflow-x-auto">
-                                      <pre className="text-sm text-gray-800 bg-gray-50 p-3 rounded border">
-                                        {JSON.stringify(
-                                          JSON.parse(submission.data),
-                                          null,
-                                          2
-                                        )}
-                                      </pre>
-                                    </div>
-                                  ) : (
-                                    <SubmissionDataDisplay
-                                      data={submission.data}
-                                    />
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                      {expandedRows.has(submission.id) ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
                       )}
-                    </React.Fragment>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            
-            {/* Pagination for Submissions */}
-            {submissionsTotalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={submissionsTotalPages}
-                  onPageChange={handlePageChange}
-                  totalItems={filteredSubmissions.length}
-                  itemsPerPage={itemsPerPage}
-                />
-              </div>
-            )}
-          </div>
+                    </button>
+                    <span className="font-mono text-sm">{value.slice(0, 8)}...</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'formTitle',
+                header: 'Form Title',
+                accessor: (submission) => submission.form.title,
+                sortable: true,
+                filterable: true,
+                width: '250px',
+                render: (value) => <span className="font-medium">{value}</span>,
+              },
+              {
+                key: 'userName',
+                header: 'User',
+                accessor: (submission) => submission.userName,
+                sortable: true,
+                filterable: true,
+                width: '150px',
+                render: (value) => (
+                  <div className="flex items-center space-x-1">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span>{value || "Anonymous"}</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'createdAt',
+                header: 'Submitted',
+                accessor: (submission) => new Date(submission.createdAt),
+                sortable: true,
+                width: '150px',
+                render: (value) => formatDate(value.toISOString()),
+              },
+              {
+                key: 'formId',
+                header: 'Form ID',
+                accessor: (submission) => submission.formId,
+                sortable: true,
+                filterable: true,
+                width: '150px',
+                render: (value) => <span className="font-mono text-sm">{value.slice(0, 8)}...</span>,
+              },
+              {
+                key: 'actions',
+                header: 'Actions',
+                accessor: () => null,
+                width: '150px',
+                align: 'center',
+                render: (_, submission) => (
+                  <div className="flex items-center justify-center space-x-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedSubmission(submission);
+                        setShowSubmissionModal(true);
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={(e) => handleDeleteSubmission(submission.id, e)}
+                      disabled={deletingItem === submission.id}
+                    >
+                      {deletingItem === submission.id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
+            loading={loading}
+            pagination={{
+              currentPage,
+              totalPages: submissionsTotalPages,
+              totalItems: filteredSubmissions.length,
+              itemsPerPage,
+              onPageChange: handlePageChange,
+              onItemsPerPageChange: (newItemsPerPage) => {
+                setItemsPerPage(newItemsPerPage);
+                setCurrentPage(1);
+              },
+            }}
+            search={{
+              value: searchTerm,
+              onChange: setSearchTerm,
+              placeholder: "Search submissions...",
+            }}
+            sorting={{
+              sortBy,
+              sortOrder,
+              onSort: handleSort,
+            }}
+
+            actions={{
+              onRefresh: fetchData,
+            }}
+            emptyMessage="No submissions found matching your criteria"
+            showColumnVisibility={true}
+            showFilters={false}
+            virtualScroll={true}
+            maxHeight="600px"
+          />
         )}
 
         {/* Results Summary */}
@@ -1248,6 +1119,30 @@ export default function DatabaseViewerPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Submission Details Modal */}
+        {selectedSubmission && (
+          <SubmissionDetailsModal
+            submission={selectedSubmission}
+            isOpen={showSubmissionModal}
+            onClose={() => {
+              setShowSubmissionModal(false);
+              setSelectedSubmission(null);
+            }}
+          />
+        )}
+
+        {/* Form Details Modal */}
+        {selectedForm && (
+          <FormDetailsModal
+            form={selectedForm}
+            isOpen={showFormModal}
+            onClose={() => {
+              setShowFormModal(false);
+              setSelectedForm(null);
+            }}
+          />
         )}
       </div>
     </div>

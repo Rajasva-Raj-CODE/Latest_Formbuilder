@@ -6,9 +6,11 @@ import { Loader2 } from 'lucide-react'
 import { useFormStore } from '@/lib/store'
 import { FormFieldWrapper } from './forms'
 import { SuccessMessage, ErrorMessage } from './ui'
+import { toast } from '@/lib/toast'
 
 export function FormPreview() {
   const params = useParams()
+
   const {
     metadata,
     fields,
@@ -102,15 +104,18 @@ export function FormPreview() {
       if (response.ok) {
         const result = await response.json()
         console.log('Submission successful:', result)
+        toast.success('Form submitted successfully!', 'Thank you for your submission.')
         setIsSubmitted(true)
         resetFormValues()
       } else {
         const errorData = await response.json()
         console.error('Submission failed:', errorData)
+        toast.error('Submission failed', errorData.error || 'Please try again.')
         setSubmitError(errorData.error || 'Failed to submit form. Please try again.')
       }
-    } catch (error) {
-      console.error('Error submitting form:', error)
+    } catch (err) {
+      console.error('Error submitting form:', err)
+      toast.error('Network error', 'Please check your connection and try again.')
       setSubmitError('Network error. Please check your connection and try again.')
     } finally {
       setIsSubmitting(false)

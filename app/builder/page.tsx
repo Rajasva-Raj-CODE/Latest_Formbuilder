@@ -10,14 +10,14 @@ import { FieldPanel } from '@/components/FieldPanel'
 import { Button } from '@/components/ui/button'
 import { Save, Eye, Settings, Plus, CheckCircle } from 'lucide-react'
 import { useFormStore } from '@/lib/store'
+import { toast } from '@/lib/toast'
 
 export default function BuilderPage() {
   const [activeTab, setActiveTab] = useState<'builder' | 'preview'>('builder')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<string | null>(null)
-  const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success')
+
   
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -70,11 +70,11 @@ export default function BuilderPage() {
         })
       } else {
         console.error('Failed to load form')
-        alert('Failed to load form')
+        toast.error('Failed to load form', 'Please try again or check if the form exists.')
       }
-    } catch (error) {
-      console.error('Error loading form:', error)
-      alert('Error loading form')
+    } catch (err) {
+      console.error('Error loading form:', err)
+      toast.error('Error loading form', 'Network error. Please check your connection.')
     } finally {
       setLoading(false)
     }
@@ -98,24 +98,20 @@ export default function BuilderPage() {
   const saveForm = async () => {
     try {
       setSaving(true)
-      setSaveMessage(null)
       
       // Validate form data before saving
       if (!metadata.title.trim()) {
-        setSaveMessage('Form title is required')
-        setSaveMessageType('error')
+        toast.error('Form title is required', 'Please add a title to your form.')
         return
       }
       
       if (!metadata.userName.trim()) {
-        setSaveMessage('Your name is required')
-        setSaveMessageType('error')
+        toast.error('Your name is required', 'Please add your name to continue.')
         return
       }
       
       if (fields.length === 0) {
-        setSaveMessage('Please add at least one field to your form')
-        setSaveMessageType('error')
+        toast.error('No fields added', 'Please add at least one field to your form.')
         return
       }
       
@@ -152,20 +148,14 @@ export default function BuilderPage() {
           router.replace(`/builder?edit=${savedForm.id}`, { scroll: false })
         }
         
-        setSaveMessage('Form saved successfully!')
-        setSaveMessageType('success')
-        
-        // Clear message after 3 seconds
-        setTimeout(() => setSaveMessage(null), 3000)
+        toast.success('Form saved successfully!', 'Your form has been saved and is ready to use.')
       } else {
         const errorData = await response.json()
-        setSaveMessage(errorData.error || 'Failed to save form')
-        setSaveMessageType('error')
+        toast.error('Failed to save form', errorData.error || 'Please try again.')
       }
-    } catch (error) {
-      console.error('Error saving form:', error)
-      setSaveMessage('Network error. Please check your connection and try again.')
-      setSaveMessageType('error')
+    } catch (err) {
+      console.error('Error saving form:', err)
+      toast.error('Network error', 'Please check your connection and try again.')
     } finally {
       setSaving(false)
     }
@@ -174,19 +164,16 @@ export default function BuilderPage() {
   const publishForm = async () => {
     try {
       setPublishing(true)
-      setSaveMessage(null)
       
       // First save the form if it hasn't been saved
       if (!editFormId) {
-        setSaveMessage('Saving form first...')
-        setSaveMessageType('success')
+        toast.info('Saving form first...', 'Please wait while we save your form.')
         
         await saveForm()
         
         // Check if save was successful
         if (!editFormId) {
-          setSaveMessage('Failed to save form. Cannot publish.')
-          setSaveMessageType('error')
+          toast.error('Failed to save form', 'Cannot publish without saving first.')
           return
         }
         
@@ -204,8 +191,7 @@ export default function BuilderPage() {
       })
 
       if (response.ok) {
-        setSaveMessage('Form published successfully! Redirecting to dashboard...')
-        setSaveMessageType('success')
+        toast.success('Form published successfully!', 'Redirecting to dashboard...')
         
         // Redirect after 2 seconds
         setTimeout(() => {
@@ -213,13 +199,11 @@ export default function BuilderPage() {
         }, 2000)
       } else {
         const errorData = await response.json()
-        setSaveMessage(errorData.error || 'Failed to publish form')
-        setSaveMessageType('error')
+        toast.error('Failed to publish form', errorData.error || 'Please try again.')
       }
-    } catch (error) {
-      console.error('Error publishing form:', error)
-      setSaveMessage('Network error. Please check your connection and try again.')
-      setSaveMessageType('error')
+    } catch (err) {
+      console.error('Error publishing form:', err)
+      toast.error('Network error', 'Please check your connection and try again.')
     } finally {
       setPublishing(false)
     }
@@ -266,16 +250,6 @@ export default function BuilderPage() {
           </div>
           
           <div className="flex items-center space-x-3">
-            {saveMessage && (
-              <div className={`px-4 py-2 rounded-md text-sm font-medium ${
-                saveMessageType === 'success' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {saveMessage}
-              </div>
-            )}
-            
             <Button variant="outline" onClick={saveForm} disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Saving...' : 'Save'}

@@ -4,6 +4,7 @@ import { useFormStore } from '@/lib/store'
 import { Card, CardContent } from '@/components/ui'
 import { FormHeader } from '@/components/forms'
 import { SortableField } from '@/components/fields'
+import { toast } from '@/lib/toast'
 
 export function FormBuilder() {
   const {
@@ -13,6 +14,7 @@ export function FormBuilder() {
     updateField,
     deleteField
   } = useFormStore()
+
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -41,7 +43,10 @@ export function FormBuilder() {
               key={field.id}
               field={field}
               onUpdate={(updates) => updateField(field.id, updates)}
-              onDelete={() => deleteField(field.id)}
+              onDelete={() => {
+                deleteField(field.id)
+                toast.warning('Field deleted', `${field.label} has been removed from your form.`)
+              }}
             />
           ))
         )}

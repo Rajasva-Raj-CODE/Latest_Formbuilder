@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui'
 import { AlertCircle } from 'lucide-react'
 import { FormPreview } from '@/components/FormPreview'
 import { useFormStore } from '@/lib/store'
+import { toast } from '@/lib/toast'
 
 interface FormField {
   id: string
@@ -31,6 +32,7 @@ export default function FormPage() {
   const [form, setForm] = useState<Form | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
   
   const { updateMetadata, reorderFields } = useFormStore()
 
@@ -50,8 +52,10 @@ export default function FormPage() {
       if (!response.ok) {
         if (response.status === 404) {
           setError('Form not found')
+          toast.error('Form not found', 'The form you are looking for does not exist.')
         } else {
           setError('Failed to load form')
+          toast.error('Failed to load form', 'Please try again or contact the form owner.')
         }
         return
       }
@@ -61,11 +65,13 @@ export default function FormPage() {
       
       if (!data.isPublished) {
         setError('This form is not published yet')
+        toast.warning('Form not published', 'This form is not available for submissions yet.')
         return
       }
 
       if (!data.isActive) {
         setError('This form is no longer active')
+        toast.warning('Form inactive', 'This form is no longer accepting submissions.')
         return
       }
 
@@ -90,9 +96,10 @@ export default function FormPage() {
       
       console.log('Transformed fields:', transformedFields)
       reorderFields(transformedFields)
-    } catch (error) {
-      console.error('Error fetching form:', error)
+    } catch (err) {
+      console.error('Error fetching form:', err)
       setError('Failed to load form')
+      toast.error('Network error', 'Please check your connection and try again.')
     } finally {
       setLoading(false)
     }

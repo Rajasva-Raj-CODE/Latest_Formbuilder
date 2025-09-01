@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui'
 import { FieldTypeCard } from './fields'
 import { useFormStore } from '@/lib/store'
+import { toast } from '@/lib/toast'
 import { 
   Type, 
   Mail, 
@@ -34,12 +35,15 @@ export function FieldPanel() {
   const [searchTerm, setSearchTerm] = useState('')
   const { addField } = useFormStore()
 
+
   const filteredFields = fieldTypes.filter(field =>
     field.label.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleAddField = (fieldType: string) => {
     addField(fieldType)
+    const fieldLabel = fieldTypes.find(f => f.type === fieldType)?.label || fieldType
+    toast.success('Field added!', `${fieldLabel} has been added to your form.`)
   }
 
   return (
