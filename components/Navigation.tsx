@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Home, Plus, BarChart3, Database, TestTube } from 'lucide-react'
+import Image from 'next/image'
 
 export function Navigation() {
   const pathname = usePathname()
@@ -19,7 +20,8 @@ export function Navigation() {
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-8">
-          <h1 className="text-xl font-bold text-gray-900">AI Form Builder</h1>
+          <Image src="/logosoft.svg" alt="Form Builder" width={60} height={60} />
+          <h1 className="text-xl font-bold text-gray-900">Form Builder</h1>
           
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {

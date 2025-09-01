@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Setting up AI Gen Form Builder..."
+echo "🚀 Setting up Form Builder..."
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
