@@ -17,31 +17,44 @@ export function Navigation() {
   ]
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-8">
-          <Image src="/logosoft.svg" alt="Form Builder" width={60} height={60} />
-          <h1 className="text-xl font-bold text-gray-900">Form Builder</h1>
-          
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={isActive ? 'default' : 'ghost'}
-                    size="sm"
-                    className="flex items-center space-x-2"
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </Button>
-                </Link>
-              )
-            })}
+    <nav className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        {/* Logo and Brand Section - Left Side */}
+        <div className="flex items-center space-x-3">
+          <div className="flex-shrink-0">
+            <Image 
+              src="/logosoft.svg" 
+              alt="Company Logo" 
+              width={56} 
+              height={56} 
+              className="w-24 h-24"
+            />
           </div>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold text-primary leading-tight">FormBuilder</h1>
+            <p className="text-xs text-muted-foreground leading-tight">Professional Forms</p>
+          </div>
+        </div>
+        
+        {/* Navigation Items - Right Side */}
+        <div className="hidden md:flex items-center space-x-1">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+            
+            return (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant={isActive ? 'default' : 'ghost'}
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Button>
+              </Link>
+            )
+          })}
         </div>
 
         {/* Mobile menu button */}
@@ -56,7 +69,7 @@ export function Navigation() {
       </div>
 
       {/* Mobile navigation */}
-      <div className="md:hidden mt-4 pb-4">
+      <div className="md:hidden mt-3 pb-3">
         <div className="flex flex-col space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon

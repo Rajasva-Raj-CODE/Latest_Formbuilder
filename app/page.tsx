@@ -22,43 +22,43 @@ export default function HomePage() {
       icon: FileText,
       title: "Drag & Drop Builder",
       description: "Intuitive interface to create forms without coding",
-      color: "text-blue-600",
-      bgColor: "bg-blue-100"
+      color: "text-primary",
+      bgColor: "bg-primary/10"
     },
     {
       icon: Zap,
       title: "Instant Preview",
       description: "See your form changes in real-time as you build",
-      color: "text-green-600",
-      bgColor: "bg-green-100"
+      color: "text-accent",
+      bgColor: "bg-accent/10"
     },
     {
       icon: Shield,
       title: "Secure & Reliable",
       description: "Your data is safe with enterprise-grade security",
-      color: "text-purple-600",
-      bgColor: "bg-purple-100"
+      color: "text-primary",
+      bgColor: "bg-primary/10"
     },
     {
       icon: Smartphone,
       title: "Mobile Responsive",
       description: "Forms that look great on all devices",
-      color: "text-orange-600",
-      bgColor: "bg-orange-100"
+      color: "text-accent",
+      bgColor: "bg-accent/10"
     },
     {
       icon: Globe,
       title: "Easy Sharing",
       description: "Share forms with a simple link",
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100"
+      color: "text-primary",
+      bgColor: "bg-primary/10"
     },
     {
       icon: BarChart3,
       title: "Analytics Dashboard",
       description: "Track form submissions and insights",
-      color: "text-red-600",
-      bgColor: "bg-red-100"
+      color: "text-accent",
+      bgColor: "bg-accent/10"
     }
   ]
 
@@ -68,8 +68,8 @@ export default function HomePage() {
       description: "Start building your first form",
       href: "/builder",
       icon: FileText,
-      color: "bg-blue-600 hover:bg-blue-700",
-      bgColor: "bg-blue-100",
+      color: "company-button-primary",
+      bgColor: "bg-primary/10",
       buttonText: "Get Started"
     },
     {
@@ -77,8 +77,8 @@ export default function HomePage() {
       description: "Manage your existing forms",
       href: "/dashboard",
       icon: BarChart3,
-      color: "bg-green-600 hover:bg-green-700",
-      bgColor: "bg-green-100",
+      color: "company-button-accent",
+      bgColor: "bg-accent/10",
       buttonText: "Open Dashboard"
     },
     {
@@ -86,8 +86,8 @@ export default function HomePage() {
       description: "Inspect your stored data",
       href: "/database-viewer",
       icon: Database,
-      color: "bg-purple-600 hover:bg-purple-700",
-      bgColor: "bg-purple-100",
+      color: "company-button-primary",
+      bgColor: "bg-primary/10",
       buttonText: "View Data"
     }
   ]
@@ -116,20 +116,20 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-white to-accent/5">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10"></div>
+        <div className="absolute inset-0 company-gradient opacity-10"></div>
         <div className="relative container mx-auto px-6 py-20">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium mb-6">
               <Zap className="w-4 h-4 mr-2" />
               Build Forms in Minutes
             </div>
             
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               Create Beautiful Forms
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              <span className="block company-gradient-text">
                 Without Code
               </span>
             </h1>
@@ -142,14 +142,14 @@ export default function HomePage() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link href="/builder">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-4">
+                <Button size="lg" className="company-button-primary text-lg px-8 py-4">
                   <Play className="w-5 h-5 mr-2" />
                   Start Building Now
                 </Button>
               </Link>
               
               <Link href="/dashboard">
-                <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-2">
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors">
                   <BarChart3 className="w-5 h-5 mr-2" />
                   View Dashboard
                 </Button>
@@ -170,10 +170,10 @@ export default function HomePage() {
           {quickActions.map((action, index) => {
             const Icon = action.icon
             return (
-              <Card key={index} className="hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+              <Card key={index} className="company-card hover:shadow-lg transition-all duration-300">
                 <CardHeader className="text-center pb-4">
                   <div className={`w-16 h-16 ${action.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                    <Icon className={`w-8 h-8 ${action.color}`} />
+                    <Icon className={`w-8 h-8 ${action.color.replace('company-button-', 'text-')}`} />
                   </div>
                   <CardTitle className="text-xl">{action.title}</CardTitle>
                 </CardHeader>
@@ -202,14 +202,14 @@ export default function HomePage() {
         <div className="grid md:grid-cols-4 gap-8">
           {steps.map((step, index) => (
             <div key={index} className="text-center relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
+              <div className="w-20 h-20 company-gradient rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
                 {step.number}
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
               <p className="text-gray-600">{step.description}</p>
               
               {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-10 left-full w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 transform -translate-y-1/2 z-0"></div>
+                <div className="hidden md:block absolute top-10 left-full w-full h-0.5 company-gradient transform -translate-y-1/2 z-0"></div>
               )}
             </div>
           ))}
@@ -227,7 +227,7 @@ export default function HomePage() {
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
-              <Card key={index} className="hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+              <Card key={index} className="company-card hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6">
                   <div className={`w-12 h-12 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4`}>
                     <Icon className={`w-6 h-6 ${feature.color}`} />
@@ -246,10 +246,10 @@ export default function HomePage() {
       <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-6 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 company-gradient rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Form Builder</span>
+            <span className="text-xl font-bold">FormBuilder</span>
           </div>
           <p className="text-gray-400 mb-4">
             Create beautiful forms with our intuitive drag-and-drop interface
