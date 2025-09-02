@@ -21,6 +21,7 @@ export function Navigation() {
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         {/* Logo and Brand Section - Left Side */}
         <div className="flex items-center space-x-3">
+          <Link href="/">
           <div className="flex-shrink-0">
             <Image 
               src="/logosoft.svg" 
@@ -30,6 +31,7 @@ export function Navigation() {
               className="w-24 h-24"
             />
           </div>
+          </Link>
           <div className="flex flex-col">
             <h1 className="text-lg font-bold text-primary leading-tight">FormBuilder</h1>
             <p className="text-xs text-muted-foreground leading-tight">Professional Forms</p>
